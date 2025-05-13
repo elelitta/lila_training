@@ -1,0 +1,67 @@
+PREFIX marl: <http://www.gsi.dit.upm.es/ontologies/marl/ns#>
+PREFIX powla: <http://purl.org/powla/powla.owl#>
+PREFIX lexinfo: <https://lexinfo.net/ontology/2.0/lexinfo.owl#>
+PREFIX lemonEty: <http://lari-datasets.ilc.cnr.it/lemonEty#>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX lila: <http://lila-erc.eu/ontologies/lila/>
+PREFIX lime: <http://www.w3.org/ns/lemon/lime#>
+PREFIX marl: <http://www.gsi.dit.upm.es/ontologies/marl/ns#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX ontolex: <http://www.w3.org/ns/lemon/ontolex#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX premon: <http://premon.fbk.eu/ontology/core#>
+PREFIX vallex: <http://lila-erc.eu/ontologies/latinVallex/>
+PREFIX wn: <https://globalwordnet.github.io/schemas/wn#>
+
+select ?token ?tokenLabel ?docTitle where {
+{select * where {
+
+{SELECT ?lemma WHERE {
+      
+  ?token lila:hasLemma ?lemma .
+  ?token powla:hasLayer/powla:hasDocument ?doc.
+  ?doc   dc:title ?docTitle
+} group by  ?lemma }
+
+{SELECT ?lemma  WHERE {
+      
+  VALUES ?lemmaType {
+    lila:Lemma lila:Hypolemma
+  }
+?lemma rdf:type ?lemmaType ;
+       rdfs:label ?lemmaLabel.} 
+}
+
+{SELECT ?lemma  WHERE {
+      VALUES ?polarity {marl:Negative }
+
+  ?le ontolex:canonicalForm ?lemma ;
+      ontolex:sense ?sense .
+   ?lemma rdfs:label ?lemmaLabel.
+  <http://lila-erc.eu/data/lexicalResources/LatinAffectus/Lexicon> lime:entry  ?le.
+  ?sense marl:hasPolarity ?polarity ;
+         marl:polarityValue  ?v .
+  BIND(REPLACE(STR(?polarity), "http://www.gsi.dit.upm.es/ontologies/marl/ns#", "") AS ?polarityString)
+} group by ?lemma}
+
+{select  ?lemma  where {
+  <http://lila-erc.eu/data/lexicalResources/LatinWordNet/Lexicon> lime:entry ?le.
+      VALUES ?wnsyns { <http://lila-erc.eu/data/lexicalResources/LatinWordNet/id/LexicalConcept/14472488-n> }
+
+  ?le ontolex:evokes ?wnsyns;
+      ontolex:canonicalForm ?lemma.
+  ?wnsyns rdf:type ontolex:LexicalConcept;
+          rdfs:label ?wnsysLabel;
+          skos:definition ?wnsysDescription.
+}group by ?lemma}
+}
+}
+{?token lila:hasLemma ?lemma ;
+           powla:hasLayer/powla:hasDocument ?doc;
+           powla:hasStringValue ?tokenLabel.           ?doc   dc:title ?docTitle.}
+}group by  ?token ?docTitle 
+order by ?tokenLabel ?docTitle
